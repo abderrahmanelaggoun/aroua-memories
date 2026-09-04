@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Aroua Memories Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080d1a;
+      --card-glass: rgba(18, 26, 47, 0.65);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary-glow: #6366f1;
+      --accent-cyan: #06b6d4;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-bottom: 4rem;
+      overflow-x: hidden;
+    }
+
+    /* ---------- Header ---------- */
+    header {
+      background: rgba(8, 13, 26, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-spacer { width: 44px; flex-shrink: 0; }
+
+    .menu-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.25s ease;
+    }
+    .menu-btn:hover { border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.1); }
+    .menu-btn span { display: block; width: 18px; height: 2px; background: #fff; border-radius: 2px; }
+
+    /* ---------- Sidebar ---------- */
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 6, 14, 0.6);
+      backdrop-filter: blur(2px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 150;
+    }
+    .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 280px;
+      max-width: 82vw;
+      background: rgba(10, 15, 30, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid var(--card-border);
+      transform: translateX(-100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding: 0 0.25rem;
+    }
+    .sidebar-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .close-sidebar-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .close-sidebar-btn:hover { color: #fff; }
+
+    .sidebar-nav { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.85rem 0.9rem;
+      border-radius: 14px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: 1px solid transparent;
+      transition: all 0.25s ease;
+    }
+    .nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-main); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.18));
+      color: #fff;
+      border-color: rgba(99, 102, 241, 0.35);
+    }
+    .nav-icon {
+      width: 22px;
+      text-align: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    /* ---------- Content ---------- */
+    .container {
+      max-width: 720px;
+      margin: 1.75rem auto 0;
+      padding: 0 1.25rem;
+    }
+
+    .category-view { display: none; }
+    .category-view.active { display: block; animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- Hero banner ---------- */
+    .category-hero {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      min-height: 168px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-end;
+    }
+    .hero-decor {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .hero-icon {
+      position: absolute;
+      font-size: 6rem;
+      line-height: 1;
+      top: 50%;
+      right: 0.75rem;
+      transform: translateY(-50%);
+      opacity: 0.25;
+      pointer-events: none;
+      user-select: none;
+    }
+    .hero-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.6) 100%);
+    }
+    .hero-text {
+      position: relative;
+      z-index: 2;
+      padding: 1.4rem 1.5rem;
+    }
+    .hero-text h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+    .hero-text p {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.82);
+      margin-top: 0.2rem;
+      font-weight: 500;
+    }
+
+    /* rain animation for the winter theme */
+    .rain-lines line {
+      animation: rainFall 1.1s linear infinite;
+    }
+    .rain-lines line:nth-child(odd) { animation-delay: 0.35s; }
+    .rain-lines line:nth-child(3n) { animation-delay: 0.6s; }
+    @keyframes rainFall {
+      0%   { transform: translateY(0); opacity: 0.9; }
+      100% { transform: translateY(14px); opacity: 0.1; }
+    }
+
+    /* ---------- Album card ---------- */
+    .album-card {
+      background: var(--card-glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .album-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+
+    .album-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+    .album-title { font-size: 1.1rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+
+    .add-photo-btn {
+      background: linear-gradient(135deg, var(--primary-glow), var(--accent-cyan));
+      color: #fff;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.5);
+      transition: all 0.3s ease;
+    }
+    .add-photo-btn:hover { transform: scale(1.08) rotate(90deg); box-shadow: 0 12px 20px -4px rgba(6, 182, 212, 0.6); }
+
+    /* ---------- Vertical photo list (framed photos + delete) ---------- */
+    .photo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .photo-frame {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      background: rgba(10, 15, 30, 0.5);
+      box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.55);
+      animation: fadeIn 0.3s ease;
+    }
+    .photo-frame img {
+      display: block;
+      width: 100%;
+      max-height: 380px;
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.35s ease;
+    }
+    .photo-frame:hover img { transform: scale(1.02); }
+
+    .delete-photo-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(239, 68, 68, 0.88);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 6px 14px -2px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s ease;
+      z-index: 3;
+    }
+    .delete-photo-btn:hover { background: var(--danger); transform: scale(1.08); }
+
+    .empty-msg {
+      display: block;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 2.75rem 0;
+    }
+
+    /* ---------- Load more / pagination ---------- */
+    .load-more-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 1.2rem;
+    }
+    .load-more-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.7rem 1.6rem;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .load-more-btn:hover {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.18));
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    .page-indicator { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+
+    .album-footer {
+      margin-top: 1.2rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-loader { font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700; display: none; }
+
+    /* ---------- Modal / Lightbox ---------- */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(5, 8, 18, 0.95);
+      backdrop-filter: blur(16px);
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+    .modal img {
+      max-width: 90%;
+      max-height: 85vh;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+    .close-modal {
+      position: absolute;
+      top: 24px; right: 28px;
+      color: #fff;
+      font-size: 2.2rem;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    .close-modal:hover { color: var(--accent-cyan); }
+
+    input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+    <h1>Aroua Memories</h1>
+    <span class="header-spacer"></span>
+  </header>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Albums</span>
+      <button class="close-sidebar-btn" onclick="toggleSidebar(false)" aria-label="Close menu">&times;</button>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+  </aside>
+
+  <div class="container" id="categoriesContainer"></div>
+
+  <div class="modal" id="imageModal" onclick="closeModal()">
+    <span class="close-modal">&times;</span>
+    <img id="modalImg" src="" alt="Enlarged view">
+  </div>
+
+  <script>
+    // --------------------------------------------------------------
+    // Fill in your own bot token and channel/chat id below.
+    // NOTE: this file runs entirely in the browser, so anyone who
+    // views the page source (or the network tab) can read these
+    // values and use your bot with them. That's fine for a private
+    // link only you use, but avoid publishing this page publicly
+    // as-is. If that ever matters, the fix is to move the two
+    // Telegram calls (sendPhoto / getFile) behind a small server
+    // you control instead of calling api.telegram.org directly.
+    // --------------------------------------------------------------
+    const BOT_TOKEN = '8884620167:AAGSrsDBrgLdHiiSgCzTROyM9oaNpWIBWm0';
+    const CHAT_ID = '-1004444889021';
+
+    // ---------- Category definitions ----------
+    // The first 5 are the original albums (unchanged, with their
+    // hand-drawn hero art). New categories are appended after them,
+    // using a simple icon + gradient hero instead.
+    const CATEGORIES = [
+      {
+        id: 'summer', label: 'Summer Trips', subtitle: 'Sun, sand, and unforgettable days',
+        heroSvg: `<svg class="hero-decor" viewBox="0 0 400 168" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="summerbg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#db2777"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="168" fill="url(#summerbg)"/>
+          <circle cx="320" cy="50" r="30" fill="#fef3c7"/>
+          <g stroke="#fef3c7" stroke-width="3" stroke-linecap="round" opacity="0.85">
+            <line x1="320" y1="8" x2="320" y2="20"/>
+            <line x1="320" y1="80" x2="320" y2="92"/>
+            <line x1="284" y1="50" x2="296" y2="50"/>
+            <line x1="344" y1="50" x2="356" y2="50"/>
+            <line x1="295" y1="25" x2="303" y2="33"/>
+            <line x1="337" y1="67" x2="345" y2="75"/>
+            <line x1="345" y1="25" x2="337" y2="33"/>
+            <line x1="303" y1="67" x2="295" y2="75"/>
+          </g>
+          <path d="M0 128 Q50 110 100 128 T200 128 T300 128 T400 128 V168 H0 Z" fill="#0891b2" opacity="0.55"/>
+          <path d="M0 145 Q50 130 100 145 T200 145 T300 145 T400 145 V168 H0 Z" fill="#0e7490" opacity="0.65"/>
+        </svg>`
+      },
+      {
+        id: 'winter', label: 'Winter Days', subtitle: 'Cozy, rainy afternoons and warm memories',
+        heroSvg: `<svg class="hero-decor" viewBox="0 0 400 168" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="winterbg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#334155"/>
+              <stop offset="100%" stop-color="#1e293b"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="168" fill="url(#winterbg)"/>
+          <ellipse cx="80" cy="46" rx="60" ry="22" fill="#64748b" opacity="0.8"/>
+          <ellipse cx="150" cy="36" rx="70" ry="26" fill="#94a3b8" opacity="0.7"/>
+          <ellipse cx="300" cy="50" rx="65" ry="24" fill="#64748b" opacity="0.75"/>
+          <g class="rain-lines" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round" opacity="0.6">
+            <line x1="40" y1="85" x2="26" y2="122"/>
+            <line x1="80" y1="90" x2="66" y2="130"/>
+            <line x1="120" y1="80" x2="106" y2="120"/>
+            <line x1="160" y1="95" x2="146" y2="135"/>
+            <line x1="200" y1="85" x2="186" y2="125"/>
+            <line x1="240" y1="90" x2="226" y2="130"/>
+            <line x1="280" y1="80" x2="266" y2="120"/>
+            <line x1="320" y1="95" x2="306" y2="135"/>
+            <line x1="360" y1="85" x2="346" y2="125"/>
+          </g>
+        </svg>`
+      },
+      {
+        id: 'school', label: 'School & Studies', subtitle: 'Notes, exams, and small victories',
+        heroSvg: `<svg class="hero-decor" viewBox="0 0 400 168" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="schoolbg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#4338ca"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="168" fill="url(#schoolbg)"/>
+          <rect x="60" y="112" width="90" height="14" rx="3" fill="#fcd34d"/>
+          <rect x="65" y="98" width="80" height="14" rx="3" fill="#fca5a5"/>
+          <rect x="58" y="84" width="94" height="14" rx="3" fill="#93c5fd"/>
+          <polygon points="105,50 165,74 105,98 45,74" fill="#f1f5f9"/>
+          <rect x="100" y="74" width="10" height="24" fill="#f1f5f9"/>
+          <circle cx="105" cy="100" r="4" fill="#facc15"/>
+          <rect x="258" y="55" width="13" height="86" rx="4" fill="#fbbf24" transform="rotate(18 264 98)"/>
+          <polygon points="258,145 271,141 264,155" fill="#334155" transform="rotate(18 264 98)"/>
+        </svg>`
+      },
+      {
+        id: 'friends', label: 'Friends', subtitle: 'The people who make every day better',
+        heroSvg: `<svg class="hero-decor" viewBox="0 0 400 168" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="friendsbg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#db2777"/>
+              <stop offset="50%" stop-color="#7c3aed"/>
+              <stop offset="100%" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="168" fill="url(#friendsbg)"/>
+          <g stroke="#ffffff" stroke-width="1.5" opacity="0.5">
+            <line x1="100" y1="84" x2="200" y2="54"/>
+            <line x1="200" y1="54" x2="300" y2="88"/>
+            <line x1="100" y1="84" x2="300" y2="88"/>
+            <line x1="200" y1="54" x2="200" y2="122"/>
+          </g>
+          <g fill="#ffffff">
+            <circle cx="100" cy="84" r="16"/>
+            <circle cx="200" cy="54" r="18"/>
+            <circle cx="300" cy="88" r="16"/>
+            <circle cx="200" cy="122" r="14"/>
+          </g>
+        </svg>`
+      },
+      {
+        id: 'home', label: 'Home Moments', subtitle: 'The quiet, comfortable in-between days',
+        heroSvg: `<svg class="hero-decor" viewBox="0 0 400 168" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="homebg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b45309"/>
+              <stop offset="100%" stop-color="#78350f"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="168" fill="url(#homebg)"/>
+          <polygon points="200,36 280,96 120,96" fill="#fde68a"/>
+          <rect x="140" y="96" width="120" height="66" fill="#fef3c7"/>
+          <rect x="185" y="124" width="30" height="38" fill="#78350f"/>
+          <rect x="150" y="108" width="24" height="24" fill="#fcd34d" opacity="0.9"/>
+          <rect x="226" y="108" width="24" height="24" fill="#fcd34d" opacity="0.9"/>
+        </svg>`
+      },
+      // ---- New categories (appended, icon + gradient hero) ----
+      { id: 'me',       label: 'Me',              subtitle: 'My own moments',                icon: '🧑', c1: '#6366f1', c2: '#06b6d4' },
+      { id: 'mom',      label: 'Mom',             subtitle: 'Best moments with Mom',          icon: '👩', c1: '#ec4899', c2: '#f472b6' },
+      { id: 'dad',      label: 'Dad',             subtitle: 'Best moments with Dad',          icon: '👨', c1: '#2563eb', c2: '#1e40af' },
+      { id: 'siblings', label: 'Brother & Sister', subtitle: 'Memories with my siblings',     icon: '👫', c1: '#f59e0b', c2: '#ea580c' },
+      { id: 'travel',   label: 'Travel',          subtitle: 'Unforgettable trips and journeys', icon: '✈️', c1: '#f59e0b', c2: '#db2777' },
+      { id: 'nature',   label: 'Nature',          subtitle: 'The beauty of nature around me', icon: '🌿', c1: '#16a34a', c2: '#15803d' },
+      { id: 'outings',  label: 'Outings',         subtitle: 'Fun trips and hangouts',         icon: '🎉', c1: '#7c3aed', c2: '#db2777' },
+      { id: 'weird',    label: 'Random Photos',   subtitle: 'Funny and unusual shots',        icon: '🤪', c1: '#f43f5e', c2: '#7c3aed' }
+    ];
+
+    const PAGE_SIZE = 5;
+    // Per-category state: photo list (newest first) and current page
+    const state = {};
+    CATEGORIES.forEach(c => { state[c.id] = { photos: [], page: 0 }; });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildLayout();
+      CATEGORIES.forEach(c => loadCategoryFromStorage(c.id));
+    });
+
+    // ---------- Build sidebar + category sections dynamically ----------
+    function buildLayout() {
+      const nav = document.getElementById('sidebarNav');
+      const container = document.getElementById('categoriesContainer');
+
+      CATEGORIES.forEach((cat, idx) => {
+        const navItem = document.createElement('div');
+        navItem.className = 'nav-item' + (idx === 0 ? ' active' : '');
+        navItem.id = `nav-${cat.id}`;
+        navItem.onclick = () => showCategory(cat.id);
+        navItem.innerHTML = `<span class="nav-icon">${cat.icon || '📷'}</span><span>${cat.label}</span>`;
+        nav.appendChild(navItem);
+
+        const heroInner = cat.heroSvg ? cat.heroSvg : `<span class="hero-icon">${cat.icon}</span>`;
+        const heroStyle = cat.heroSvg ? '' : `style="background: linear-gradient(135deg, ${cat.c1}, ${cat.c2});"`;
+
+        const section = document.createElement('section');
+        section.className = 'category-view' + (idx === 0 ? ' active' : '');
+        section.id = `view-${cat.id}`;
+        section.innerHTML = `
+          <div class="category-hero" ${heroStyle}>
+            ${heroInner}
+            <div class="hero-shade"></div>
+            <div class="hero-text">
+              <h2>${cat.label}</h2>
+              <p>${cat.subtitle}</p>
+            </div>
+          </div>
+          <div class="album-card">
+            <div class="album-header">
+              <h2 class="album-title">Photos</h2>
+              <button class="add-photo-btn" onclick="triggerFileInput('file-${cat.id}')">+</button>
+              <input type="file" id="file-${cat.id}" accept="image/*" multiple onchange="uploadPhotosToTelegram(event, '${cat.id}')">
+            </div>
+            <div class="photo-list" id="list-${cat.id}">
+              <span class="empty-msg">Loading...</span>
+            </div>
+            <div class="load-more-wrap" id="loadmore-wrap-${cat.id}" style="display:none;">
+              <button class="load-more-btn" onclick="loadMore('${cat.id}')">Show more ⌄</button>
+              <span class="page-indicator" id="pageinfo-${cat.id}"></span>
+            </div>
+            <div class="album-footer">
+              <span>Total: <span id="count-${cat.id}">0</span> photos</span>
+              <span class="status-loader" id="loader-${cat.id}">Uploading...</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(section);
+      });
+    }
+
+    // ---------- Sidebar ----------
+    function toggleSidebar(force) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      const open = force !== undefined ? force : !sidebar.classList.contains('open');
+      sidebar.classList.toggle('open', open);
+      backdrop.classList.toggle('show', open);
+    }
+
+    function showCategory(id) {
+      CATEGORIES.forEach(c => {
+        document.getElementById(`view-${c.id}`).classList.toggle('active', c.id === id);
+        document.getElementById(`nav-${c.id}`).classList.toggle('active', c.id === id);
+      });
+      toggleSidebar(false);
+    }
+
+    // ---------- Upload flow ----------
+    function triggerFileInput(inputId) {
+      document.getElementById(inputId).click();
+    }
+
+    async function uploadPhotosToTelegram(event, albumId) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      const loader = document.getElementById(`loader-${albumId}`);
+      loader.style.display = 'inline';
+
+      let idx = 0;
+      for (const file of files) {
+        try {
+          const formData = new FormData();
+          formData.append('chat_id', CHAT_ID);
+          formData.append('photo', file);
+          formData.append('caption', `#${albumId}`);
+
+          const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+
+          if (data.ok) {
+            const sizes = data.result.photo;
+            const fileId = sizes[sizes.length - 1].file_id;
+            const url = await getTelegramFileUrl(fileId);
+            if (url) {
+              const photo = { url, fileId, ts: Date.now() + idx };
+              state[albumId].photos.unshift(photo);
+              state[albumId].page = 0;
+              await persistAlbum(albumId);
+              renderPhotoList(albumId);
+            }
+          } else {
+            console.error('Telegram upload failed:', data);
+          }
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+        }
+        idx++;
+      }
+
+      loader.style.display = 'none';
+      event.target.value = '';
+    }
+
+    async function getTelegramFileUrl(fileId) {
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+        const data = await res.json();
+        if (data.ok) {
+          return `https://api.telegram.org/file/bot${BOT_TOKEN}/${data.result.file_path}`;
+        }
+      } catch (err) {
+        console.error('Error getting file URL:', err);
+      }
+      return null;
+    }
+
+    // ---------- Persistence (survives closing the browser) ----------
+    // Telegram's bot API has no endpoint to fetch a channel's full
+    // history (getUpdates only returns recent, unconfirmed updates),
+    // so it can't be used as permanent storage on its own. Every
+    // uploaded photo's link is saved here instead, which is what
+    // makes the gallery reappear after the page is reopened.
+    async function persistAlbum(albumId) {
+      try {
+        await window.storage.set(`photos:${albumId}`, JSON.stringify(state[albumId].photos), false);
+      } catch (err) {
+        console.error('Storage save error:', err);
+      }
+    }
+
+    async function loadCategoryFromStorage(albumId) {
+      let list = [];
+      try {
+        const existing = await window.storage.get(`photos:${albumId}`, false);
+        if (existing && existing.value) list = JSON.parse(existing.value);
+      } catch (err) {
+        list = [];
+      }
+      // Sort by last modified (newest first)
+      list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      state[albumId].photos = list;
+      state[albumId].page = 0;
+      renderPhotoList(albumId);
+    }
+
+    // ---------- Rendering (vertical list, framed photos, delete, 5-per-page) ----------
+    function renderPhotoList(albumId) {
+      const listEl = document.getElementById(`list-${albumId}`);
+      const photos = state[albumId].photos;
+      listEl.innerHTML = '';
+
+      if (!photos.length) {
+        listEl.innerHTML = '<span class="empty-msg">No photos added yet</span>';
+      } else {
+        const start = state[albumId].page * PAGE_SIZE;
+        const pageItems = photos.slice(start, start + PAGE_SIZE);
+        pageItems.forEach(photo => {
+          const frame = document.createElement('div');
+          frame.className = 'photo-frame';
+
+          const img = document.createElement('img');
+          img.src = photo.url;
+          img.loading = 'lazy';
+          img.onclick = () => openModal(photo.url);
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'delete-photo-btn';
+          delBtn.title = 'Delete photo';
+          delBtn.innerHTML = '✕';
+          delBtn.onclick = (e) => { e.stopPropagation(); deletePhoto(albumId, photo.ts); };
+
+          frame.appendChild(img);
+          frame.appendChild(delBtn);
+          listEl.appendChild(frame);
+        });
+      }
+
+      updateAlbumFooter(albumId);
+    }
+
+    function updateAlbumFooter(albumId) {
+      const photos = state[albumId].photos;
+      document.getElementById(`count-${albumId}`).textContent = photos.length;
+
+      const wrap = document.getElementById(`loadmore-wrap-${albumId}`);
+      const pageInfo = document.getElementById(`pageinfo-${albumId}`);
+
+      if (photos.length <= PAGE_SIZE) {
+        wrap.style.display = 'none';
+      } else {
+        const totalPages = Math.ceil(photos.length / PAGE_SIZE);
+        wrap.style.display = 'flex';
+        pageInfo.textContent = `Page ${state[albumId].page + 1} of ${totalPages}`;
+      }
+    }
+
+    function loadMore(albumId) {
+      const totalPages = Math.ceil(state[albumId].photos.length / PAGE_SIZE) || 1;
+      state[albumId].page = (state[albumId].page + 1) % totalPages;
+      renderPhotoList(albumId);
+      document.getElementById(`view-${albumId}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function deletePhoto(albumId, ts) {
+      if (!confirm('Delete this photo?')) return;
+      state[albumId].photos = state[albumId].photos.filter(p => p.ts !== ts);
+      await persistAlbum(albumId);
+
+      const totalPages = Math.ceil(state[albumId].photos.length / PAGE_SIZE) || 1;
+      if (state[albumId].page >= totalPages) state[albumId].page = Math.max(0, totalPages - 1);
+
+      renderPhotoList(albumId);
+    }
+
+    // ---------- Lightbox ----------
+    function openModal(src) {
+      document.getElementById('modalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('imageModal').style.display = 'none';
+    }
+  </script>
+
+</body>
+</html>
