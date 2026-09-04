@@ -55,9 +55,9 @@
     }
 
     header h1 {
-      font-size: 1.5rem;
+      font-size: 2.5rem;
       font-weight: 800;
-      letter-spacing: -0.01em;
+      letter-spacing: 0.05em;
       background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -442,24 +442,36 @@
     <img id="modalImg" src="" alt="Enlarged view">
   </div>
 
-  <script>
+  <!-- Firebase JS SDK (Module Version) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
     // --------------------------------------------------------------
-    // Fill in your own bot token and channel/chat id below.
-    // NOTE: this file runs entirely in the browser, so anyone who
-    // views the page source (or the network tab) can read these
-    // values and use your bot with them. That's fine for a private
-    // link only you use, but avoid publishing this page publicly
-    // as-is. If that ever matters, the fix is to move the two
-    // Telegram calls (sendPhoto / getFile) behind a small server
-    // you control instead of calling api.telegram.org directly.
+    // 1. ضع بيانات البوت الخاصة بك هنا
     // --------------------------------------------------------------
     const BOT_TOKEN = '8884620167:AAGSrsDBrgLdHiiSgCzTROyM9oaNpWIBWm0';
     const CHAT_ID = '-1004444889021';
 
+    // --------------------------------------------------------------
+    // 2. بيانات Firebase الخاصة بك (تم استخراجها من الصورة تلقائياً)
+    // --------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjVC8r3IZdRwzH9PNVtw6Qk2m5YWHSaEk",
+      authDomain: "aroua-memories.firebaseapp.com",
+      databaseURL: "https://aroua-memories-default-rtdb.firebaseio.com",
+      projectId: "aroua-memories",
+      storageBucket: "aroua-memories.firebasestorage.app",
+      messagingSenderId: "353296499697",
+      appId: "1:353296499697:web:0fc993ca2cd28b491a3a50",
+      measurementId: "G-E6MTBVS734"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
     // ---------- Category definitions ----------
-    // The first 5 are the original albums (unchanged, with their
-    // hand-drawn hero art). New categories are appended after them,
-    // using a simple icon + gradient hero instead.
     const CATEGORIES = [
       {
         id: 'summer', label: 'Summer Trips', subtitle: 'Sun, sand, and unforgettable days',
@@ -574,7 +586,6 @@
           <rect x="226" y="108" width="24" height="24" fill="#fcd34d" opacity="0.9"/>
         </svg>`
       },
-      // ---- New categories (appended, icon + gradient hero) ----
       { id: 'me',       label: 'Me',              subtitle: 'My own moments',                icon: '🧑', c1: '#6366f1', c2: '#06b6d4' },
       { id: 'mom',      label: 'Mom',             subtitle: 'Best moments with Mom',          icon: '👩', c1: '#ec4899', c2: '#f472b6' },
       { id: 'dad',      label: 'Dad',             subtitle: 'Best moments with Dad',          icon: '👨', c1: '#2563eb', c2: '#1e40af' },
@@ -586,16 +597,10 @@
     ];
 
     const PAGE_SIZE = 5;
-    // Per-category state: photo list (newest first) and current page
     const state = {};
     CATEGORIES.forEach(c => { state[c.id] = { photos: [], page: 0 }; });
 
-    window.addEventListener('DOMContentLoaded', () => {
-      buildLayout();
-      CATEGORIES.forEach(c => loadCategoryFromStorage(c.id));
-    });
-
-    // ---------- Build sidebar + category sections dynamically ----------
+    // ---------- Build UI ----------
     function buildLayout() {
       const nav = document.getElementById('sidebarNav');
       const container = document.getElementById('categoriesContainer');
@@ -604,7 +609,7 @@
         const navItem = document.createElement('div');
         navItem.className = 'nav-item' + (idx === 0 ? ' active' : '');
         navItem.id = `nav-${cat.id}`;
-        navItem.onclick = () => showCategory(cat.id);
+        navItem.onclick = () => window.showCategory(cat.id);
         navItem.innerHTML = `<span class="nav-icon">${cat.icon || '📷'}</span><span>${cat.label}</span>`;
         nav.appendChild(navItem);
 
@@ -626,14 +631,14 @@
           <div class="album-card">
             <div class="album-header">
               <h2 class="album-title">Photos</h2>
-              <button class="add-photo-btn" onclick="triggerFileInput('file-${cat.id}')">+</button>
-              <input type="file" id="file-${cat.id}" accept="image/*" multiple onchange="uploadPhotosToTelegram(event, '${cat.id}')">
+              <button class="add-photo-btn" onclick="document.getElementById('file-${cat.id}').click()">+</button>
+              <input type="file" id="file-${cat.id}" accept="image/*" multiple>
             </div>
             <div class="photo-list" id="list-${cat.id}">
               <span class="empty-msg">Loading...</span>
             </div>
             <div class="load-more-wrap" id="loadmore-wrap-${cat.id}" style="display:none;">
-              <button class="load-more-btn" onclick="loadMore('${cat.id}')">Show more ⌄</button>
+              <button class="load-more-btn" onclick="window.loadMore('${cat.id}')">Show more ⌄</button>
               <span class="page-indicator" id="pageinfo-${cat.id}"></span>
             </div>
             <div class="album-footer">
@@ -643,31 +648,67 @@
           </div>
         `;
         container.appendChild(section);
+
+        // Bind File Input Change
+        document.getElementById(`file-${cat.id}`).addEventListener('change', (e) => uploadPhotosToTelegram(e, cat.id));
       });
     }
 
-    // ---------- Sidebar ----------
-    function toggleSidebar(force) {
+    // ---------- Global UI Functions ----------
+    window.toggleSidebar = function(force) {
       const sidebar = document.getElementById('sidebar');
       const backdrop = document.getElementById('sidebarBackdrop');
       const open = force !== undefined ? force : !sidebar.classList.contains('open');
       sidebar.classList.toggle('open', open);
       backdrop.classList.toggle('show', open);
-    }
+    };
 
-    function showCategory(id) {
+    window.showCategory = function(id) {
       CATEGORIES.forEach(c => {
         document.getElementById(`view-${c.id}`).classList.toggle('active', c.id === id);
         document.getElementById(`nav-${c.id}`).classList.toggle('active', c.id === id);
       });
-      toggleSidebar(false);
+      window.toggleSidebar(false);
+    };
+
+    window.openModal = function(src) {
+      document.getElementById('modalImg').src = src;
+      document.getElementById('imageModal').style.display = 'flex';
+    };
+
+    window.closeModal = function() {
+      document.getElementById('imageModal').style.display = 'none';
+    };
+
+    // ---------- Firebase Storage Logic ----------
+    async function persistAlbum(albumId) {
+      try {
+        await set(ref(db, `photos/${albumId}`), state[albumId].photos);
+      } catch (err) {
+        console.error('Firebase save error:', err);
+      }
     }
 
-    // ---------- Upload flow ----------
-    function triggerFileInput(inputId) {
-      document.getElementById(inputId).click();
+    async function loadCategoryFromStorage(albumId) {
+      try {
+        const dbRef = ref(db);
+        const snapshot = await get(child(dbRef, `photos/${albumId}`));
+        if (snapshot.exists()) {
+          let list = snapshot.val() || [];
+          list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+          state[albumId].photos = list;
+        } else {
+          state[albumId].photos = [];
+        }
+      } catch (err) {
+        console.error('Firebase read error:', err);
+        state[albumId].photos = [];
+      }
+      state[albumId].page = 0;
+      renderPhotoList(albumId);
     }
 
+    // ---------- Upload Flow ----------
     async function uploadPhotosToTelegram(event, albumId) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
@@ -700,8 +741,6 @@
               await persistAlbum(albumId);
               renderPhotoList(albumId);
             }
-          } else {
-            console.error('Telegram upload failed:', data);
           }
         } catch (error) {
           console.error('Error uploading photo:', error);
@@ -726,36 +765,7 @@
       return null;
     }
 
-    // ---------- Persistence (survives closing the browser) ----------
-    // Telegram's bot API has no endpoint to fetch a channel's full
-    // history (getUpdates only returns recent, unconfirmed updates),
-    // so it can't be used as permanent storage on its own. Every
-    // uploaded photo's link is saved here instead, which is what
-    // makes the gallery reappear after the page is reopened.
-    async function persistAlbum(albumId) {
-      try {
-        await window.storage.set(`photos:${albumId}`, JSON.stringify(state[albumId].photos), false);
-      } catch (err) {
-        console.error('Storage save error:', err);
-      }
-    }
-
-    async function loadCategoryFromStorage(albumId) {
-      let list = [];
-      try {
-        const existing = await window.storage.get(`photos:${albumId}`, false);
-        if (existing && existing.value) list = JSON.parse(existing.value);
-      } catch (err) {
-        list = [];
-      }
-      // Sort by last modified (newest first)
-      list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      state[albumId].photos = list;
-      state[albumId].page = 0;
-      renderPhotoList(albumId);
-    }
-
-    // ---------- Rendering (vertical list, framed photos, delete, 5-per-page) ----------
+    // ---------- Rendering ----------
     function renderPhotoList(albumId) {
       const listEl = document.getElementById(`list-${albumId}`);
       const photos = state[albumId].photos;
@@ -773,7 +783,7 @@
           const img = document.createElement('img');
           img.src = photo.url;
           img.loading = 'lazy';
-          img.onclick = () => openModal(photo.url);
+          img.onclick = () => window.openModal(photo.url);
 
           const delBtn = document.createElement('button');
           delBtn.className = 'delete-photo-btn';
@@ -806,12 +816,12 @@
       }
     }
 
-    function loadMore(albumId) {
+    window.loadMore = function(albumId) {
       const totalPages = Math.ceil(state[albumId].photos.length / PAGE_SIZE) || 1;
       state[albumId].page = (state[albumId].page + 1) % totalPages;
       renderPhotoList(albumId);
       document.getElementById(`view-${albumId}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    };
 
     async function deletePhoto(albumId, ts) {
       if (!confirm('Delete this photo?')) return;
@@ -824,15 +834,11 @@
       renderPhotoList(albumId);
     }
 
-    // ---------- Lightbox ----------
-    function openModal(src) {
-      document.getElementById('modalImg').src = src;
-      document.getElementById('imageModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-      document.getElementById('imageModal').style.display = 'none';
-    }
+    // ---------- Initialization ----------
+    window.addEventListener('DOMContentLoaded', () => {
+      buildLayout();
+      CATEGORIES.forEach(c => loadCategoryFromStorage(c.id));
+    });
   </script>
 
 </body>
